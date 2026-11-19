@@ -159,7 +159,7 @@ const CATS = {
 };
 const LS = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
 const params = new URLSearchParams(location.search);
-if (params.get("g")) { LS("gist", params.get("g").trim()); history.replaceState(null, "", location.pathname); }
+if (params.get("g")) { LS("gist", (params.get("g").match(/[0-9a-f]{20,40}/i) || [""])[0]); history.replaceState(null, "", location.pathname); }
 
 let data = null, filtre = LS("filtre") || "important", aLire = LS("aLire") ?? true;
 let lus = new Set(LS("lus") || []);
@@ -188,14 +188,20 @@ async function load(manual) {
     const f = g.files && g.files["articles.json"];
     if (!f) throw new Error("Le gist ne contient pas encore articles.json : attends le prochain passage de la veille.");
     const txt = f.truncated ? await (await fetch(f.raw_url, { cache: "no-store" })).text() : f.content;
-    data = JSON.parse(txt);
+    const parsed = JSON.parse(txt || "{}");
+    if (!parsed || !Array.isArray(parsed.articles)) {
+      data = null;
+      $("app").innerHTML = `<div class="empty"><strong>Gist relié, en attente d’articles</strong>La veille n’a pas encore rempli ton gist. Sur GitHub, lance <em>Actions → Veille bourse → Run workflow</em> en mode normal, puis actualise ici.</div>`;
+      return;
+    }
+    data = parsed;
     LS("cache", data);
   } catch (e) {
     data = data || LS("cache");
     if (!data) { $("app").innerHTML = `<div class="empty"><strong>Impossible de charger les articles</strong>${esc(e.message)}</div>`; }
     else if (manual) alert(e.message);
   } finally { $("refresh").classList.remove("spin"); }
-  if (data) render();
+  if (data && Array.isArray(data.articles)) render();
 }
 
 function isRead(a) { return lus.has(a.id); }
@@ -300,15 +306,18 @@ function setup(fromSettings) {
   const cur = LS("gist") || "";
   $("app").innerHTML = `<div class="setup">
     <h2>Relier ta veille</h2>
-    <p>Colle l’identifiant de ton gist <em>veille-articles</em> : la suite de lettres et de chiffres à la fin de son adresse sur gist.github.com.</p>
+    <p>Colle l’adresse de ton gist <em>articles.json</em>, ou seulement la suite de lettres et de chiffres à la fin de cette adresse.</p>
     <input id="gistIn" value="${esc(cur)}" placeholder="ex. 3f9a1c0e7b…" autocapitalize="off" autocomplete="off" spellcheck="false">
     <button id="gistSave">Enregistrer</button>
     ${fromSettings && cur ? `<p><button class="linkish" id="gistBack">Retour aux articles</button></p>` : ""}
     <p class="err" id="gistErr"></p></div>`;
   $("gistSave").onclick = () => {
-    const v = $("gistIn").value.trim().replace(/^.*\//, "");
-    if (!/^[0-9a-f]{20,40}$/i.test(v)) { $("gistErr").textContent = "Cet identifiant ne ressemble pas à un gist : 20 à 40 caractères, chiffres et lettres a à f."; return; }
-    LS("gist", v); data = null; load(true);
+    const m = $("gistIn").value.match(/[0-9a-f]{20,40}/i);
+    const v = m ? m[0] : "";
+    if (!v) { $("gistErr").textContent = "Cet identifiant ne ressemble pas à un gist : 20 à 40 caractères, chiffres et lettres a à f."; return; }
+    LS("gist", v); data = null;
+    $("app").innerHTML = `<div class="empty"><strong>Identifiant enregistré</strong>Chargement des articles…</div>`;
+    load(true);
   };
   if ($("gistBack")) $("gistBack").onclick = () => render();
 }
