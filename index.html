@@ -97,6 +97,22 @@
     margin: 4px 0 10px; max-width: 62ch; }
   .item.lu .title { font-weight: 400; color: var(--muted); }
   .src { font-size: 13px; color: var(--muted); }
+  .chapo { font-size: 15px; line-height: 1.45; color: var(--muted); margin: -4px 0 12px; max-width: 62ch;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .item.lu .chapo { display: none; }
+  .bell { width: 13px; height: 13px; vertical-align: -1px; margin-right: 5px; color: var(--cat); }
+  .autres { margin-top: 10px; font-size: 14px; }
+  .autres summary { cursor: pointer; color: var(--muted); list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; }
+  .autres summary::-webkit-details-marker { display: none; }
+  .autres summary::before { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+  .autres[open] summary::before { transform: rotate(45deg); }
+  .autres ul { list-style: none; margin: 6px 0 0; padding: 0 0 0 2px; }
+  .autres li { padding: 7px 0; border-top: 1px dashed var(--line); }
+  .autres li a { text-decoration: none; display: block; }
+  .autres .os { color: var(--ink); font-weight: 600; }
+  .autres .ot { color: var(--muted); display: block; margin-top: 1px; line-height: 1.35; }
+  @media (prefers-reduced-motion: reduce) { .autres summary::before { transition: none; } }
   .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .read { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent);
     color: var(--accent-ink); padding: 8px 14px; border-radius: var(--radius-btn); font-size: 15px; font-weight: 600; }
@@ -162,6 +178,11 @@ const params = new URLSearchParams(location.search);
 if (params.get("g")) { LS("gist", (params.get("g").match(/[0-9a-f]{20,40}/i) || [""])[0]); history.replaceState(null, "", location.pathname); }
 
 let data = null, filtre = LS("filtre") || "important", aLire = LS("aLire") ?? true;
+// lien de la notif du soir : ?f=actu ouvre directement l'actu générale
+if (["important", "tout", "valeur", "reco", "opportunite", "etf", "theme", "actu"].includes(params.get("f"))) {
+  filtre = params.get("f"); LS("filtre", filtre);
+  history.replaceState(null, "", location.pathname);
+}
 let lus = new Set(LS("lus") || []);
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -235,31 +256,47 @@ function ring(frac) {
   return `<svg class="ring" viewBox="0 0 16 16" aria-hidden="true"><circle class="bg" cx="8" cy="8" r="${r}"/><circle class="fg" cx="8" cy="8" r="${r}" stroke-dasharray="${(c * frac).toFixed(1)} ${c.toFixed(1)}"/></svg>`;
 }
 
+const BELL = `<svg class="bell" viewBox="0 0 24 24" fill="currentColor" aria-label="Notifié"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5-6.7V3.5a2 2 0 1 0-4 0v.8A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>`;
+
+function autresHTML(a, delai, now) {
+  const list = a.autres || [];
+  if (!list.length) return "";
+  const li = list.map(o => {
+    const d = new Date(o.ts);
+    const href = (o.payant && now - d >= delai) ? o.gem : (o.link || o.gem);
+    return `<li><a href="${esc(href)}" target="_blank" rel="noopener" data-id="${a.id}"><span class="os">${esc(o.source)}</span> · ${hhmm(d)}<span class="ot">${esc(o.title)}</span></a></li>`;
+  }).join("");
+  return `<details class="autres"><summary>${list.length === 1 ? "1 autre source" : list.length + " autres sources"}</summary><ul>${li}</ul></details>`;
+}
+
 function itemHTML(a) {
   const d = new Date(a.ts), now = Date.now();
   const delai = (data.delai_gem_h || 4) * 36e5;
   const pret = now - d >= delai;
   const cat = CATS[a.cat] || CATS.actu;
+  const src = a.url || a.link;
   let primary, secondary;
   if (a.payant && pret) {
     primary = { href: a.gem, txt: "Lire via GEM" };
-    secondary = a.link ? `<a class="alt" href="${esc(a.link)}" target="_blank" rel="noopener" data-id="${a.id}">Source</a>` : "";
+    secondary = src ? `<a class="alt" href="${esc(src)}" target="_blank" rel="noopener" data-id="${a.id}">Source</a>` : "";
   } else if (a.payant) {
     const dispo = new Date(d.getTime() + delai);
-    primary = { href: a.link || a.gem, txt: "Lire l’extrait" };
+    primary = { href: src || a.gem, txt: "Lire l’extrait" };
     secondary = `<a class="wait" href="${esc(a.gem)}" target="_blank" rel="noopener" data-id="${a.id}" title="Nexis Uni ajoute les articles avec quelques heures de retard">${ring(Math.min(1, (now - d) / delai))}Texte intégral vers ${hhmm(dispo)}</a>`;
   } else {
-    primary = { href: a.link || a.gem, txt: "Lire" };
+    primary = { href: src || a.gem, txt: "Lire" };
     secondary = `<a class="alt" href="${esc(a.gem)}" target="_blank" rel="noopener" data-id="${a.id}">Chercher via GEM</a>`;
   }
   return `<li class="item${isRead(a) ? " lu" : ""}" style="--cat:var(${cat.var})" data-id="${a.id}">
-    <div class="meta"><span class="lab">${esc(a.label)}</span><time datetime="${a.ts}">${hhmm(d)}</time></div>
+    <div class="meta"><span class="lab">${a.notifie && a.cat !== "actu" ? BELL : ""}${esc(a.label)}</span><time datetime="${a.ts}">${hhmm(d)}</time></div>
     <a class="title" href="${esc(primary.href)}" target="_blank" rel="noopener" data-id="${a.id}">${esc(a.title)}</a>
+    ${a.chapo ? `<p class="chapo">${esc(a.chapo)}</p>` : ""}
     <div class="actions">
       <a class="read" href="${esc(primary.href)}" target="_blank" rel="noopener" data-id="${a.id}">${primary.txt}</a>
       ${secondary}
       <span class="src">${esc(a.source)}</span>
     </div>
+    ${autresHTML(a, delai, now)}
     <button class="toggle" data-toggle="${a.id}" aria-label="${isRead(a) ? "Marquer comme à lire" : "Marquer comme lu"}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${isRead(a) ? '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>' : '<circle cx="12" cy="12" r="9"/>'}</svg>
     </button>
@@ -291,6 +328,7 @@ function render() {
 $("app").addEventListener("click", (e) => {
   const t = e.target.closest("[data-toggle]");
   if (t) { const id = t.dataset.toggle; markRead(id, !lus.has(id)); render(); return; }
+  if (e.target.closest("summary")) return;
   const a = e.target.closest("a[data-id]");
   if (a) { markRead(a.dataset.id); setTimeout(render, 300); }
 });
