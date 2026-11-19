@@ -1,5 +1,5 @@
 // Garde l'interface disponible hors ligne ; les articles viennent toujours du réseau.
-const CACHE = "ma-veille-v2";
+const CACHE = "ma-veille-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "apple-touch-icon.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", (e) => {
