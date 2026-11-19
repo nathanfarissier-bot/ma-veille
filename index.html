@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ma veille</title>
+<meta name="theme-color" content="#F3F5F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1A2E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ma veille">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F3F5F8;
+    --surface: #FFFFFF;
+    --ink: #13213B;
+    --muted: #5E6B82;
+    --line: #DDE2EA;
+    --accent: #1F4FD8;
+    --accent-ink: #FFFFFF;
+    --c-valeur: #1F4FD8;
+    --c-reco: #C98A00;
+    --c-opportunite: #0F8F80;
+    --c-etf: #6A4BD6;
+    --c-theme: #B4436C;
+    --c-actu: #7A8599;
+    --radius-btn: 10px;
+    --font: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1A2E; --surface: #16233B; --ink: #E8EDF5; --muted: #93A0B8;
+      --line: #24334F; --accent: #6E95FF; --accent-ink: #0F1A2E;
+      --c-valeur: #6E95FF; --c-reco: #F0B429; --c-opportunite: #2CC3B0;
+      --c-etf: #A08CFF; --c-theme: #E57BA2; --c-actu: #8A96AD;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font);
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* ---------- en-tête ---------- */
+  header {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    padding: calc(env(safe-area-inset-top) + 14px) 18px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .maj { font-size: 13px; color: var(--muted); }
+  .icon-btn { background: none; border: 0; padding: 6px; cursor: pointer; color: var(--muted); }
+  .icon-btn svg { width: 20px; height: 20px; display: block; }
+  .spin svg { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .filters { display: flex; gap: 6px; overflow-x: auto; margin: 12px -18px 0; padding: 0 18px 2px;
+    scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+    padding: 6px 12px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .chip .n { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip[aria-pressed="true"] .n { color: inherit; opacity: .7; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .bar2 { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 10px; }
+  .seg { display: inline-flex; background: var(--line); border-radius: 9px; padding: 2px; }
+  .seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(19,33,59,.12); }
+  .linkish { background: none; border: 0; color: var(--accent); font-size: 14px; cursor: pointer; padding: 4px 0; }
+
+  /* ---------- liste ---------- */
+  main { max-width: 680px; margin: 0 auto; }
+  .day { font-size: 15px; font-weight: 600; color: var(--muted); padding: 22px 18px 6px; margin: 0; }
+  ol.list { list-style: none; margin: 0; padding: 0; background: var(--surface);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  @media (min-width: 700px) { ol.list { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; } }
+  .item { position: relative; padding: 14px 18px 14px 22px; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; }
+  .item::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px;
+    border-radius: 0 3px 3px 0; background: var(--cat); }
+  .item.lu::before { opacity: .25; }
+  .meta { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+  .meta .lab { color: var(--cat); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta time { font-variant-numeric: tabular-nums; flex: none; }
+  .title { display: block; text-decoration: none; font-size: 17px; line-height: 1.38; font-weight: 600;
+    margin: 4px 0 10px; max-width: 62ch; }
+  .item.lu .title { font-weight: 400; color: var(--muted); }
+  .src { font-size: 13px; color: var(--muted); }
+  .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .read { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent);
+    color: var(--accent-ink); padding: 8px 14px; border-radius: var(--radius-btn); font-size: 15px; font-weight: 600; }
+  .item.lu .read { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--line); }
+  .alt { font-size: 14px; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .wait { font-size: 14px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .ring { width: 16px; height: 16px; flex: none; }
+  .ring circle { fill: none; stroke-width: 3; }
+  .ring .bg { stroke: var(--line); }
+  .ring .fg { stroke: var(--c-reco); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .toggle { position: absolute; right: 12px; bottom: 12px; width: 34px; height: 34px; border-radius: 50%;
+    border: 0; background: none; cursor: pointer; display: grid; place-items: center; color: var(--muted); }
+  .toggle svg { width: 20px; height: 20px; }
+  .item.lu .toggle { color: var(--c-opportunite); }
+
+  .empty, .setup { padding: 48px 24px; text-align: center; color: var(--muted); max-width: 440px; margin: 0 auto; }
+  .empty strong, .setup h2 { color: var(--ink); display: block; font-size: 18px; margin: 0 0 6px; }
+  .setup input { width: 100%; font: inherit; font-size: 16px; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); margin: 14px 0 10px; }
+  .setup button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: var(--accent);
+    color: var(--accent-ink); font-weight: 600; font-size: 16px; cursor: pointer; }
+  .setup p { line-height: 1.5; font-size: 15px; }
+  .err { color: #C0392B; font-size: 14px; margin: 8px 0 0; }
+  @media (prefers-reduced-motion: reduce) { .spin svg { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>Ma veille</h1>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="maj" id="maj"></span>
+      <button class="icon-btn" id="refresh" aria-label="Actualiser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      </button>
+      <button class="icon-btn" id="settings" aria-label="Réglages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="filters" id="filters" aria-label="Catégories"></nav>
+  <div class="bar2">
+    <div class="seg" role="group" aria-label="Affichage">
+      <button id="vAll" aria-pressed="false">Tout</button>
+      <button id="vUnread" aria-pressed="true">À lire</button>
+    </div>
+    <button class="linkish" id="allRead">Tout marquer comme lu</button>
+  </div>
+</header>
+<main id="app"></main>
+
+<script>
+const CATS = {
+  valeur:      { nom: "Mes valeurs",   var: "--c-valeur" },
+  reco:        { nom: "Recos",         var: "--c-reco" },
+  opportunite: { nom: "Opportunités",  var: "--c-opportunite" },
+  etf:         { nom: "ETF",           var: "--c-etf" },
+  theme:       { nom: "Thèmes",        var: "--c-theme" },
+  actu:        { nom: "Actu",          var: "--c-actu" },
+};
+const LS = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
+const params = new URLSearchParams(location.search);
+if (params.get("g")) { LS("gist", params.get("g").trim()); history.replaceState(null, "", location.pathname); }
+
+let data = null, filtre = LS("filtre") || "important", aLire = LS("aLire") ?? true;
+let lus = new Set(LS("lus") || []);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function hhmm(d) { return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
+function dayLabel(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const x = new Date(d); x.setHours(0,0,0,0);
+  const diff = Math.round((t - x) / 864e5);
+  if (diff === 0) return "Aujourd’hui";
+  if (diff === 1) return "Hier";
+  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+async function load(manual) {
+  const gist = LS("gist");
+  if (params.get("demo")) { data = window.DEMO; render(); return; }
+  if (!gist) { setup(); return; }
+  $("refresh").classList.add("spin");
+  try {
+    const r = await fetch(`https://api.github.com/gists/${gist}`, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } });
+    if (!r.ok) throw new Error(r.status === 404 ? "Gist introuvable : vérifie l’identifiant dans les réglages." : `GitHub a répondu ${r.status}.`);
+    const g = await r.json();
+    const f = g.files && g.files["articles.json"];
+    if (!f) throw new Error("Le gist ne contient pas encore articles.json : attends le prochain passage de la veille.");
+    const txt = f.truncated ? await (await fetch(f.raw_url, { cache: "no-store" })).text() : f.content;
+    data = JSON.parse(txt);
+    LS("cache", data);
+  } catch (e) {
+    data = data || LS("cache");
+    if (!data) { $("app").innerHTML = `<div class="empty"><strong>Impossible de charger les articles</strong>${esc(e.message)}</div>`; }
+    else if (manual) alert(e.message);
+  } finally { $("refresh").classList.remove("spin"); }
+  if (data) render();
+}
+
+function isRead(a) { return lus.has(a.id); }
+function markRead(id, on = true) { on ? lus.add(id) : lus.delete(id); saveLus(); }
+function saveLus() {
+  const ids = new Set((data?.articles || []).map(a => a.id));
+  LS("lus", [...lus].filter(i => ids.has(i)));
+}
+
+function inFilter(a) {
+  if (filtre === "important") return a.cat !== "actu";
+  if (filtre === "tout") return true;
+  return a.cat === filtre;
+}
+
+function renderFilters() {
+  const arts = data.articles;
+  const unread = (pred) => arts.filter(a => pred(a) && !isRead(a)).length;
+  const defs = [
+    ["important", "L’essentiel", null, unread(a => a.cat !== "actu")],
+    ...Object.entries(CATS).map(([k, c]) => [k, c.nom, c.var, unread(a => a.cat === k)]),
+    ["tout", "Tout", null, unread(() => true)],
+  ];
+  $("filters").innerHTML = defs.map(([k, nom, v, n]) =>
+    `<button class="chip" data-f="${k}" aria-pressed="${filtre === k}">${v ? `<span class="dot" style="background:var(${v})"></span>` : ""}${nom}${n ? ` <span class="n">${n}</span>` : ""}</button>`).join("");
+  $("filters").querySelectorAll(".chip").forEach(b => b.onclick = () => { filtre = b.dataset.f; LS("filtre", filtre); render(); });
+}
+
+function ring(frac) {
+  const r = 6, c = 2 * Math.PI * r;
+  return `<svg class="ring" viewBox="0 0 16 16" aria-hidden="true"><circle class="bg" cx="8" cy="8" r="${r}"/><circle class="fg" cx="8" cy="8" r="${r}" stroke-dasharray="${(c * frac).toFixed(1)} ${c.toFixed(1)}"/></svg>`;
+}
+
+function itemHTML(a) {
+  const d = new Date(a.ts), now = Date.now();
+  const delai = (data.delai_gem_h || 4) * 36e5;
+  const pret = now - d >= delai;
+  const cat = CATS[a.cat] || CATS.actu;
+  let primary, secondary;
+  if (a.payant && pret) {
+    primary = { href: a.gem, txt: "Lire via GEM" };
+    secondary = a.link ? `<a class="alt" href="${esc(a.link)}" target="_blank" rel="noopener" data-id="${a.id}">Source</a>` : "";
+  } else if (a.payant) {
+    const dispo = new Date(d.getTime() + delai);
+    primary = { href: a.link || a.gem, txt: "Lire l’extrait" };
+    secondary = `<a class="wait" href="${esc(a.gem)}" target="_blank" rel="noopener" data-id="${a.id}" title="Nexis Uni ajoute les articles avec quelques heures de retard">${ring(Math.min(1, (now - d) / delai))}Texte intégral vers ${hhmm(dispo)}</a>`;
+  } else {
+    primary = { href: a.link || a.gem, txt: "Lire" };
+    secondary = `<a class="alt" href="${esc(a.gem)}" target="_blank" rel="noopener" data-id="${a.id}">Chercher via GEM</a>`;
+  }
+  return `<li class="item${isRead(a) ? " lu" : ""}" style="--cat:var(${cat.var})" data-id="${a.id}">
+    <div class="meta"><span class="lab">${esc(a.label)}</span><time datetime="${a.ts}">${hhmm(d)}</time></div>
+    <a class="title" href="${esc(primary.href)}" target="_blank" rel="noopener" data-id="${a.id}">${esc(a.title)}</a>
+    <div class="actions">
+      <a class="read" href="${esc(primary.href)}" target="_blank" rel="noopener" data-id="${a.id}">${primary.txt}</a>
+      ${secondary}
+      <span class="src">${esc(a.source)}</span>
+    </div>
+    <button class="toggle" data-toggle="${a.id}" aria-label="${isRead(a) ? "Marquer comme à lire" : "Marquer comme lu"}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${isRead(a) ? '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>' : '<circle cx="12" cy="12" r="9"/>'}</svg>
+    </button>
+  </li>`;
+}
+
+function render() {
+  if (!data) return;
+  const m = new Date(data.maj);
+  $("maj").textContent = isNaN(m) ? "" : `maj ${hhmm(m)}`;
+  $("vAll").setAttribute("aria-pressed", !aLire);
+  $("vUnread").setAttribute("aria-pressed", aLire);
+  renderFilters();
+  const arts = data.articles.filter(a => inFilter(a) && (!aLire || !isRead(a)));
+  if (!arts.length) {
+    $("app").innerHTML = `<div class="empty"><strong>${aLire ? "Tout est lu" : "Rien ici pour l’instant"}</strong>${aLire ? "Passe sur « Tout » pour revoir les articles déjà lus." : "Les nouveaux articles apparaîtront au prochain passage de la veille."}</div>`;
+    return;
+  }
+  const groups = [];
+  for (const a of arts) {
+    const lab = dayLabel(new Date(a.ts));
+    if (!groups.length || groups.at(-1)[0] !== lab) groups.push([lab, []]);
+    groups.at(-1)[1].push(a);
+  }
+  $("app").innerHTML = groups.map(([lab, list]) =>
+    `<h2 class="day">${lab}</h2><ol class="list">${list.map(itemHTML).join("")}</ol>`).join("") + `<div style="height:40px"></div>`;
+}
+
+$("app").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-toggle]");
+  if (t) { const id = t.dataset.toggle; markRead(id, !lus.has(id)); render(); return; }
+  const a = e.target.closest("a[data-id]");
+  if (a) { markRead(a.dataset.id); setTimeout(render, 300); }
+});
+$("vAll").onclick = () => { aLire = false; LS("aLire", false); render(); };
+$("vUnread").onclick = () => { aLire = true; LS("aLire", true); render(); };
+$("allRead").onclick = () => { data.articles.filter(inFilter).forEach(a => lus.add(a.id)); saveLus(); render(); };
+$("refresh").onclick = () => load(true);
+$("settings").onclick = () => setup(true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden) load(); }, 5 * 60e3);
+
+function setup(fromSettings) {
+  const cur = LS("gist") || "";
+  $("app").innerHTML = `<div class="setup">
+    <h2>Relier ta veille</h2>
+    <p>Colle l’identifiant de ton gist <em>veille-articles</em> : la suite de lettres et de chiffres à la fin de son adresse sur gist.github.com.</p>
+    <input id="gistIn" value="${esc(cur)}" placeholder="ex. 3f9a1c0e7b…" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <button id="gistSave">Enregistrer</button>
+    ${fromSettings && cur ? `<p><button class="linkish" id="gistBack">Retour aux articles</button></p>` : ""}
+    <p class="err" id="gistErr"></p></div>`;
+  $("gistSave").onclick = () => {
+    const v = $("gistIn").value.trim().replace(/^.*\//, "");
+    if (!/^[0-9a-f]{20,40}$/i.test(v)) { $("gistErr").textContent = "Cet identifiant ne ressemble pas à un gist : 20 à 40 caractères, chiffres et lettres a à f."; return; }
+    LS("gist", v); data = null; load(true);
+  };
+  if ($("gistBack")) $("gistBack").onclick = () => render();
+}
+
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+window.addEventListener("load", () => load());
+</script>
+</body>
+</html>
